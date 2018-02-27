@@ -88,7 +88,7 @@ unsigned int isProbablyPrime(unsigned int N) {
   
   r=0;
   unsigned int r2=1;
-  for(unsigned int i=N; i%2==0; i/=2) {
+  for(unsigned int i=N-1; i%2==0; i/=2) {
     r++;
     r2*=2;
   }
