@@ -12,7 +12,7 @@ unsigned int modprod(unsigned int a, unsigned int b, unsigned int p) {
   for(unsigned int i=0; i<32; i++) {
     if(b>>i==0)break;
     unsigned int bi = (b>>i)&1;
-    if(bi == 0) {
+    if(bi == 1) {
       ab = (ab + za)%p;
     }
     za = (2*za)%p;
@@ -27,7 +27,7 @@ unsigned int modExp(unsigned int a, unsigned int b, unsigned int p) {
   unsigned int aExpb = 1;
   for(unsigned int i=0; i<32; i++) {
     unsigned int bi = (b>>i)&1;
-    if(bi == 0) {
+    if(bi == 1) {
       aExpb = modprod(aExpb, z, p);
     }
     z = modprod(z, z, p);
