@@ -21,10 +21,10 @@ int main (int argc, char **argv) {
   srand(seed);
 
   //begin with rank 0 getting user's input
-  unsigned int n;
-
-  /* Q3.1 Make rank 0 setup the ELGamal system and
-    broadcast the public key information */
+  unsigned int n = 15;
+/*
+  * Q3.1 Make rank 0 setup the ELGamal system and
+    broadcast the public key information *
   if(rank ==0) {
     printf("Enter a number of bits: "); fflush(stdout);
     char status = scanf("%u",&n);
@@ -35,7 +35,7 @@ int main (int argc, char **argv) {
       return 0;   
     }
     printf("\n");
-  }
+  }*/
   //declare storage for an ElGamal cryptosytem
   unsigned int p, g, h, x;
   if(rank ==0) {
