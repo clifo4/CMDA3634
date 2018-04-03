@@ -21,6 +21,8 @@ To create an image with 4096 x 4096 pixels (last argument will be used to set nu
 #include "png_util.h"
 
 // Q2a: add include for CUDA header file here:
+#include<cuda.h>
+
 
 #define MXITER 1000
 
@@ -32,7 +34,7 @@ typedef struct {
 }complex_t;
 
 // return iterations before z leaves mandelbrot set for given c
-int testpoint(complex_t c){
+__device__ int testpoint(complex_t c){
   
   int iter;
 
@@ -62,22 +64,25 @@ int testpoint(complex_t c){
 // record the  iteration counts in the count array
 
 // Q2c: transform this function into a CUDA kernel
-void  mandelbrot(int Nre, int Nim, complex_t cmin, complex_t cmax, float *count){ 
+__global__ void  mandelbrot(int Nre, int Nim, complex_t cmin, complex_t cmax, float *count){ 
   int n,m;
-
+  int tidx = threadIdx.x;
+  int tidy = threadIdx.y;
+  int bidx = blockIdx.x;
+  int bidy = blockIdx.y;
+  int bSizex = blockDim.x;
+  int bSizey = blockDim.y;
+  int m = bidx*bSizex+tidx;
+  int n = bidy*bSizey+tidy;
   complex_t c;
 
   double dr = (cmax.r-cmin.r)/(Nre-1);
   double di = (cmax.i-cmin.i)/(Nim-1);;
 
-  for(n=0;n<Nim;++n){
-    for(m=0;m<Nre;++m){
-      c.r = cmin.r + dr*m;
-      c.i = cmin.i + di*n;
-      
-      count[m+n*Nre] = testpoint(c);
-      
-    }
+  c.r = cmin.r + dr*m;
+  c.i = cmin.i + di*n;
+  if(n < Nre && m < Nim) {
+    count[m+n*Nre] = testpoint(c);
   }
 
 }
@@ -96,7 +101,10 @@ int main(int argc, char **argv){
 
   // storage for the iteration counts
   float *count = (float*) malloc(Nre*Nim*sizeof(float));
-
+  float *d_count;
+  cudaMalloc(&d_count, Nre*Nim*sizeof(float));
+  dim3 nThreads(Nthreads, Nthreads, 1);
+  dim3 nBlocks((Nre + (Nthreads*Nthreads-1))/ (Nthreads*Nthreads), (Nim + (Nthreads*Nthreads-1))/ (Nthreads*Nthreads), 1);
   // Parameters for a bounding box for "c" that generates an interesting image
   const float centRe = -.759856, centIm= .125547;
   const float diam  = 0.151579;
@@ -112,9 +120,13 @@ int main(int argc, char **argv){
   clock_t start = clock(); //start time in CPU cycles
 
   // compute mandelbrot set
-  mandelbrot(Nre, Nim, cmin, cmax, count); 
+  mandelbrot <<< nThreads, nBlocks >>> (Nre, Nim, cmin, cmax, d_count); 
   
+  cudaDeviceSynchronize();
+
   clock_t end = clock(); //start time in CPU cycles
+
+  cudaMemcpy(count, d_count, Nre*Nim*sizeof(float), cudaMemcpyDeviceToHost);
   
   // print elapsed time
   printf("elapsed = %f\n", ((double)(end-start))/CLOCKS_PER_SEC);
