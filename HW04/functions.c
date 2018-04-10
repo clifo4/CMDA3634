@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 
+#include <omp.h>
 #include "functions.h"
 
 //compute a*b mod p safely
@@ -152,7 +153,7 @@ void ElGamalEncrypt(unsigned int *m, unsigned int *a, unsigned int Nints,
                     unsigned int p, unsigned int g, unsigned int h) {
 
   /* Q2.1 Parallelize this function with OpenMP   */
-
+#pragma omp parallel for shared(m, a)
   for (unsigned int i=0; i<Nints;i++) {
     //pick y in Z_p randomly
     unsigned int y;
@@ -175,7 +176,7 @@ void ElGamalDecrypt(unsigned int *m, unsigned int *a, unsigned int Nints,
                     unsigned int p, unsigned int x) {
 
   /* Q2.1 Parallelize this function with OpenMP   */
-
+#pragma omp parallel for shared(m)
   for (unsigned int i=0; i<Nints;i++) {
     //compute s = a^x
     unsigned int s = modExp(a[i],x,p);
@@ -193,7 +194,12 @@ void ElGamalDecrypt(unsigned int *m, unsigned int *a, unsigned int Nints,
 void padString(unsigned char* string, unsigned int charsPerInt) {
 
   /* Q1.2 Complete this function   */
-
+  int len = strlen(string);
+  while(len%charsPerInt !=0) {
+    string[len] = ' ';
+    string[len+1] = '\0';
+    len = strlen(string);
+  }
 }
 
 
@@ -202,7 +208,11 @@ void convertStringToZ(unsigned char *string, unsigned int Nchars,
 
   /* Q1.3 Complete this function   */
   /* Q2.2 Parallelize this function with OpenMP   */
-
+  unsigned int charsPerInt = Nchars/Nints;
+  #pragma omp parallel for shared(Z)
+  for(int n = 0; n<Nchars; n++) {
+    Z[n/charsPerInt] = Z[n/charsPerInt] | (string[n]<<((charsPerInt-1-n%charsPerInt)*9));
+  }
 }
 
 
@@ -211,6 +221,10 @@ void convertZToString(unsigned int  *Z,      unsigned int Nints,
 
   /* Q1.4 Complete this function   */
   /* Q2.2 Parallelize this function with OpenMP   */
-
+  unsigned int charsPerInt = Nchars/Nints;
+#pragma omp parallel for shared(string)
+  for(int n=0; n<Nchars; n++) {
+    string[n] = (unsigned char) (Z[n/charsPerInt]>>(9*(charsPerInt-1-n%charsPerInt)));
+  }
 }
 
