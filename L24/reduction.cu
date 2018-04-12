@@ -9,16 +9,20 @@ __global__ void reduction(const int N, float *a, float *result) {
   int thread = threadIdx.x;
   int block  = blockIdx.x;
   int blockSize = blockDim.x;
+  int gridSize = gridDim.x;
+
 
   //unique global thread ID
   int id = thread + block*blockSize;
 
-  __shared__ float s_sum[256];
+  __volatile__ __shared__ float s_sum[256];
 
   float sum = 0;
-  if (id<N) 
-    sum = a[id]; //add the thread's id to start
-  
+  for (int i=0; i<4; i++){
+    if(id+i*blockSize*gridSize<N){
+      sum += a[id+i*blockSize*gridSize]; //add the thread's id to start
+    }
+  }
   s_sum[thread] = sum;
   
   __syncthreads(); //make sure the write to shared is finished
@@ -111,7 +115,7 @@ int main (int argc, char **argv) {
   
   do {
  
-    Nnew = (N+256-1)/256;
+    Nnew = (N+4*256-1)/(4*256);
 
     //block dimensions
     dim3 B(256,1,1);
